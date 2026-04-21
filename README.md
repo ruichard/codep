@@ -37,6 +37,9 @@ pnpm dlx @ruichard/codep doctor        # or: npx @ruichard/codep doctor
 # or install globally (adds a `codep` binary to PATH)
 npm i -g @ruichard/codep
 codep doctor                 # see what's installed/authenticated
+
+# or on macOS / Linux via Homebrew:
+brew install ruichard/codep/codep
 ```
 
 ### Shell completion

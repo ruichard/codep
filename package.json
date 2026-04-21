@@ -24,6 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sync-models": "tsx scripts/sync-models.ts",
+    "gen-brew": "tsx scripts/gen-homebrew-formula.ts",
     "prepublishOnly": "pnpm typecheck && pnpm test -- --run && pnpm build"
   },
   "publishConfig": {
