@@ -26,7 +26,7 @@ program
   .description(
     "Route coding tasks to the best official CLI (Claude / Codex / Gemini).",
   )
-  .version(CODEP_VERSION);
+  .version(CODEP_VERSION, "-v, --version", "output the version number");
 
 program
   .command("doctor")

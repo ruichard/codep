@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-04-21
+
+### Changed
+- `codep -v` now prints the version. Previously only the uppercase `-V` worked (Commander.js default). Lowercase is the more common convention, and codep has no `--verbose` flag to conflict with.
+
 ## [0.1.1] - 2026-04-21
 
 ### Added
@@ -53,6 +58,7 @@ First published release. Everything below lands in a single initial cut.
 - Hard timeout enforcement; runner surfaces a `timedOut` signal back to the caller.
 - Vitest unit tests for scorer, constraints, pipeline, classifier, and run log.
 
-[Unreleased]: https://github.com/ruichard/codep/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ruichard/codep/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/ruichard/codep/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ruichard/codep/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ruichard/codep/releases/tag/v0.1.0
