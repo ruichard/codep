@@ -437,19 +437,27 @@ function App({ refreshMs }: { refreshMs: number }) {
   const recent = useMemo(() => recentRows(filtered, 50), [filtered]);
 
   // Clamp selectedIdx whenever the underlying list changes.
+  // Only write when the clamped value actually differs — otherwise setView
+  // produces a fresh object, `view` changes identity, and this effect loops
+  // forever. That notably fired when the list was empty (selectedIdx=0 and
+  // Math.max(0, length-1)=0 still met the old `>=` check).
   useEffect(() => {
-    if (view.kind === "logs" && view.selectedIdx >= recent.length) {
-      setView({ kind: "logs", selectedIdx: Math.max(0, recent.length - 1) });
-    }
-    if (
-      view.kind === "sessions" &&
-      snap &&
-      view.selectedIdx >= snap.sessions.length
-    ) {
-      setView({
-        kind: "sessions",
-        selectedIdx: Math.max(0, snap.sessions.length - 1),
-      });
+    if (view.kind === "logs") {
+      const clamped = Math.min(
+        view.selectedIdx,
+        Math.max(0, recent.length - 1),
+      );
+      if (clamped !== view.selectedIdx) {
+        setView({ kind: "logs", selectedIdx: clamped });
+      }
+    } else if (view.kind === "sessions" && snap) {
+      const clamped = Math.min(
+        view.selectedIdx,
+        Math.max(0, snap.sessions.length - 1),
+      );
+      if (clamped !== view.selectedIdx) {
+        setView({ kind: "sessions", selectedIdx: clamped });
+      }
     }
   }, [view, recent.length, snap]);
 
