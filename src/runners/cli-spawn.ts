@@ -144,6 +144,11 @@ export class CliSpawnRunner implements Runner {
       timeout: opts.timeoutMs,
       cancelSignal: opts.signal,
       shell: needsShell(binPath),
+      // Close child's stdin immediately. Some CLIs (notably `codex`) see a
+      // non-TTY piped stdin and block on "Reading additional input from
+      // stdin..." waiting for more context. We already pass the prompt via
+      // argv, so there is nothing to pipe in.
+      stdin: "ignore",
     });
 
     // Collect stdout/stderr chunks into a shared queue so we can yield them

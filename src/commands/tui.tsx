@@ -511,13 +511,21 @@ function App({ refreshMs }: { refreshMs: number }) {
       process.execPath,
       [cliEntry, "run", "--save-session", prompt],
       {
-        all: true,
         reject: false,
+        buffer: false,
+        stdin: "ignore",
+        stdout: "pipe",
+        stderr: "pipe",
         env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" },
       },
     );
     childRef.current = child;
-    setView({ kind: "running", prompt, output: "", done: false });
+    setView({
+      kind: "running",
+      prompt,
+      output: `[codep] launching: ${process.execPath} ${cliEntry} run --save-session …\n`,
+      done: false,
+    });
 
     const onData = (buf: Buffer | string) => {
       const chunk = typeof buf === "string" ? buf : buf.toString("utf8");
@@ -527,7 +535,8 @@ function App({ refreshMs }: { refreshMs: number }) {
           : v,
       );
     };
-    child.all?.on("data", onData);
+    child.stdout?.on("data", onData);
+    child.stderr?.on("data", onData);
 
     child
       .then((result) => {

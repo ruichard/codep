@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-04-21
+
+### Fixed
+- Provider CLIs no longer hang on `Reading additional input from stdin...` when spawned by codep. The child's stdin is now explicitly closed (`stdin: "ignore"`); the prompt has always been passed via argv, so nothing needs to be piped in. Most visible when running inside `codep tui`, where `codex` could sit idle after a `gemini` fallback.
+- `codep tui` compose view now echoes `[codep] launching: …` immediately and streams both stdout and stderr from the child, so the user sees progress (router header, fallback notes, session-saved line) while the provider is still thinking.
+
 ## [0.2.0] - 2026-04-21
 
 ### Added
