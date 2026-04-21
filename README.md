@@ -1,7 +1,7 @@
 # codep
 
-[![ci](https://github.com/codep-dev/codep/actions/workflows/ci.yml/badge.svg)](https://github.com/codep-dev/codep/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/codep.svg)](https://www.npmjs.com/package/codep)
+[![ci](https://github.com/ruichard/codep/actions/workflows/ci.yml/badge.svg)](https://github.com/ruichard/codep/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@ruichard/codep.svg)](https://www.npmjs.com/package/@ruichard/codep)
 [![license: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](./LICENSE)
 
 **Route coding tasks to the most suitable official CLI** — Claude Code, OpenAI Codex CLI, or Gemini CLI — and stream the result back.
@@ -31,10 +31,13 @@ Node.js ≥ 20 required. Works on macOS, Linux, and Windows (PowerShell / cmd / 
 Then:
 
 ```sh
-pnpm dlx codep doctor    # see what's installed/authenticated
-```
+# one-off, no install
+pnpm dlx @ruichard/codep doctor        # or: npx @ruichard/codep doctor
 
-(Published npm package forthcoming; see **Develop** below to run from source.)
+# or install globally (adds a `codep` binary to PATH)
+npm i -g @ruichard/codep
+codep doctor                 # see what's installed/authenticated
+```
 
 ## Usage
 

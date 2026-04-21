@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-04-21
+
+First published release. Everything below lands in a single initial cut.
+
 ### Added
 - CLI skeleton with `commander`, default `run` subcommand and `doctor` subcommand.
 - `Runner` interface and `CliSpawnRunner` generic driver for invoking vendor CLIs.
@@ -44,4 +48,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hard timeout enforcement; runner surfaces a `timedOut` signal back to the caller.
 - Vitest unit tests for scorer, constraints, pipeline, classifier, and run log.
 
-[Unreleased]: https://github.com/codep-dev/codep/compare/HEAD...HEAD
+[Unreleased]: https://github.com/ruichard/codep/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ruichard/codep/releases/tag/v0.1.0

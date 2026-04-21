@@ -1,6 +1,6 @@
 {
-  "name": "codep",
-  "version": "0.0.0",
+  "name": "@ruichard/codep",
+  "version": "0.1.0",
   "description": "Route coding tasks to the most suitable official CLI (Claude Code / OpenAI Codex / Gemini CLI).",
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -31,11 +31,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/codep-dev/codep.git"
+    "url": "git+https://github.com/ruichard/codep.git"
   },
-  "homepage": "https://codep.dev",
+  "homepage": "https://github.com/ruichard/codep",
   "bugs": {
-    "url": "https://github.com/codep-dev/codep/issues"
+    "url": "https://github.com/ruichard/codep/issues"
   },
   "dependencies": {
     "commander": "^12.1.0",
