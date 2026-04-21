@@ -19,7 +19,7 @@ export default defineConfig({
   // Ink/React are only loaded by `codep tui` via dynamic import. Keep them
   // external so the main bundle stays small and the TUI deps are resolved
   // from node_modules at runtime.
-  external: ["ink", "ink-spinner", "react"],
+  external: ["ink", "ink-spinner", "ink-text-input", "react"],
   define: {
     __CODEP_VERSION__: JSON.stringify(pkg.version),
   },

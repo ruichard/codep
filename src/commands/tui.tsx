@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text, render, useApp, useInput } from "ink";
+import TextInput from "ink-text-input";
+import { execa, type ResultPromise } from "execa";
 import { detectAll } from "../router/availability.js";
 import type { Capabilities, ProviderId } from "../runners/base.js";
 import { ALL_PROVIDERS } from "../runners/base.js";
@@ -351,7 +353,78 @@ type View =
   | { kind: "logs"; selectedIdx: number }
   | { kind: "sessions"; selectedIdx: number }
   | { kind: "runDetail"; entry: RunLogEntry; from: View }
-  | { kind: "sessionDetail"; session: SessionRecord; from: View };
+  | { kind: "sessionDetail"; session: SessionRecord; from: View }
+  | { kind: "compose" }
+  | {
+      kind: "running";
+      prompt: string;
+      output: string;
+      done: boolean;
+      exitCode?: number;
+    };
+
+function ComposeView({
+  value,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: (v: string) => void;
+}) {
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      <Text bold>Prompt</Text>
+      <Box borderStyle="round" paddingX={1}>
+        <Text color="cyan">{"> "}</Text>
+        <TextInput value={value} onChange={onChange} onSubmit={onSubmit} />
+      </Box>
+      <Text color="gray">
+        codep will auto-route to Claude / Codex / Gemini based on the prompt.
+      </Text>
+    </Box>
+  );
+}
+
+function RunningView({
+  view,
+}: {
+  view: { prompt: string; output: string; done: boolean; exitCode?: number };
+}) {
+  const promptPreview =
+    view.prompt.length > 100 ? view.prompt.slice(0, 100) + "…" : view.prompt;
+  // Cap rendered output to the tail; a long Ink Text node causes very slow
+  // re-layout in large terminals and we only ever need the recent tail for
+  // the user to watch progress. The full output is saved via --save-session.
+  const MAX_CHARS = 6000;
+  const tail =
+    view.output.length > MAX_CHARS
+      ? "…(earlier output truncated)…\n" + view.output.slice(-MAX_CHARS)
+      : view.output;
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      <Text bold>
+        {view.done ? (
+          <>
+            Result{" "}
+            <Text color={view.exitCode === 0 ? "green" : "red"}>
+              (exit {view.exitCode ?? "?"})
+            </Text>
+          </>
+        ) : (
+          <Text color="cyan">Running…</Text>
+        )}
+      </Text>
+      <Text color="gray">
+        <Text color="gray">prompt: </Text>
+        {promptPreview}
+      </Text>
+      <Box borderStyle="round" paddingX={1} flexDirection="column" marginTop={1}>
+        <Text>{tail || "(waiting for output)"}</Text>
+      </Box>
+    </Box>
+  );
+}
 
 function viewLabel(v: View): string {
   switch (v.kind) {
@@ -365,6 +438,10 @@ function viewLabel(v: View): string {
       return "run detail";
     case "sessionDetail":
       return "session detail";
+    case "compose":
+      return "compose";
+    case "running":
+      return v.done ? "result" : "running";
   }
 }
 
@@ -373,7 +450,7 @@ function Footer({ view }: { view: View }) {
   switch (view.kind) {
     case "dashboard":
       hints =
-        "[q] quit  [r] refresh  [l] logs  [s] sessions  [1/3/7/a] window";
+        "[i] prompt  [q] quit  [r] refresh  [l] logs  [s] sessions  [1/3/7/a] window";
       break;
     case "logs":
       hints =
@@ -385,6 +462,14 @@ function Footer({ view }: { view: View }) {
     case "runDetail":
     case "sessionDetail":
       hints = "[esc] back  [q] quit";
+      break;
+    case "compose":
+      hints = "[enter] submit  [esc] cancel";
+      break;
+    case "running":
+      hints = view.done
+        ? "[enter] new prompt  [esc] back to dashboard"
+        : "[esc/ctrl-c] abort";
       break;
   }
   return (
@@ -404,6 +489,72 @@ function App({ refreshMs }: { refreshMs: number }) {
   const [detailSession, setDetailSession] = useState<SessionRecord | undefined>(
     undefined,
   );
+  const [promptInput, setPromptInput] = useState("");
+  const childRef = React.useRef<ResultPromise | null>(null);
+
+  function startRun(prompt: string) {
+    // argv[1] is the codep CLI entry (dist/cli.js when installed, src/cli.ts
+    // via tsx when developing). Spawning re-uses the full router + retry
+    // + session-capture pipeline from `codep run` without duplicating logic.
+    const cliEntry = process.argv[1];
+    if (!cliEntry) {
+      setView({
+        kind: "running",
+        prompt,
+        output: "[codep] internal error: cannot locate CLI entry point.\n",
+        done: true,
+        exitCode: 1,
+      });
+      return;
+    }
+    const child = execa(
+      process.execPath,
+      [cliEntry, "run", "--save-session", prompt],
+      {
+        all: true,
+        reject: false,
+        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" },
+      },
+    );
+    childRef.current = child;
+    setView({ kind: "running", prompt, output: "", done: false });
+
+    const onData = (buf: Buffer | string) => {
+      const chunk = typeof buf === "string" ? buf : buf.toString("utf8");
+      setView((v) =>
+        v.kind === "running" && !v.done
+          ? { ...v, output: v.output + chunk }
+          : v,
+      );
+    };
+    child.all?.on("data", onData);
+
+    child
+      .then((result) => {
+        childRef.current = null;
+        setView((v) =>
+          v.kind === "running"
+            ? { ...v, done: true, exitCode: result.exitCode ?? 0 }
+            : v,
+        );
+        setTick((t) => t + 1);
+      })
+      .catch((err: unknown) => {
+        childRef.current = null;
+        const msg = err instanceof Error ? err.message : String(err);
+        setView((v) =>
+          v.kind === "running"
+            ? {
+                ...v,
+                done: true,
+                output: v.output + `\n[codep] ${msg}\n`,
+                exitCode: 1,
+              }
+            : v,
+        );
+        setTick((t) => t + 1);
+      });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -462,6 +613,38 @@ function App({ refreshMs }: { refreshMs: number }) {
   }, [view, recent.length, snap]);
 
   useInput((input, key) => {
+    // Compose view: TextInput captures text. Only Esc cancels — don't let
+    // any other key (notably `q`) trigger global actions while typing.
+    if (view.kind === "compose") {
+      if (key.escape) {
+        setPromptInput("");
+        setView({ kind: "dashboard" });
+      }
+      return;
+    }
+
+    // Running view: while live, only abort keys work. When done, Enter
+    // starts a new prompt and Esc/q returns to dashboard.
+    if (view.kind === "running") {
+      if (!view.done) {
+        if (key.escape || (key.ctrl && input === "c")) {
+          childRef.current?.kill("SIGINT");
+        }
+        return;
+      }
+      if (key.return) {
+        setPromptInput("");
+        setView({ kind: "compose" });
+        return;
+      }
+      if (key.escape || input === "q") {
+        setView({ kind: "dashboard" });
+        setTick((t) => t + 1);
+        return;
+      }
+      return;
+    }
+
     if (input === "q" || (key.ctrl && input === "c")) {
       exit();
       return;
@@ -505,6 +688,11 @@ function App({ refreshMs }: { refreshMs: number }) {
 
     // Navigation between top-level views.
     if (view.kind === "dashboard") {
+      if (input === "i") {
+        setPromptInput("");
+        setView({ kind: "compose" });
+        return;
+      }
       if (input === "l") {
         setView({ kind: "logs", selectedIdx: 0 });
         return;
@@ -649,6 +837,23 @@ function App({ refreshMs }: { refreshMs: number }) {
       break;
     case "sessionDetail":
       body = <SessionDetail session={detailSession ?? view.session} />;
+      break;
+    case "compose":
+      body = (
+        <ComposeView
+          value={promptInput}
+          onChange={setPromptInput}
+          onSubmit={(raw) => {
+            const p = raw.trim();
+            if (!p) return;
+            setPromptInput("");
+            startRun(p);
+          }}
+        />
+      );
+      break;
+    case "running":
+      body = <RunningView view={view} />;
       break;
   }
 

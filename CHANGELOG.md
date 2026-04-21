@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-21
+
+### Added
+- **In-TUI prompt / chat mode.** From the dashboard, press `i` to open a compose box, type a prompt, and hit Enter. codep spawns `codep run --save-session` under the hood, streams stdout/stderr into the TUI live, and writes the turn to the session log when it finishes. Esc or Ctrl-C aborts a running turn; Enter on the result view starts a new prompt. Built on `ink-text-input` for the input box and re-uses the same router + retry + session-capture pipeline as non-interactive `codep run` — zero logic duplication.
+
+### Changed
+- Dashboard footer now advertises `[i] prompt` in addition to the existing navigation hints.
+
 ## [0.1.3] - 2026-04-21
 
 ### Fixed
