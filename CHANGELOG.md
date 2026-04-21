@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-21
+
+### Added
+- `codep completion [bash|zsh|fish]` subcommand prints a shell completion script. Emits static snippets (no runtime codep spawn on tab), auto-detects the shell from `$SHELL` when no arg is given, and when the output is a TTY appends install hints as a trailing comment block. Install with e.g. `codep completion zsh > "${fpath[1]}/_codep"` or `source <(codep completion bash)`.
+
 ## [0.1.0] - 2026-04-21
 
 First published release. Everything below lands in a single initial cut.
@@ -48,5 +53,6 @@ First published release. Everything below lands in a single initial cut.
 - Hard timeout enforcement; runner surfaces a `timedOut` signal back to the caller.
 - Vitest unit tests for scorer, constraints, pipeline, classifier, and run log.
 
-[Unreleased]: https://github.com/ruichard/codep/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ruichard/codep/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/ruichard/codep/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ruichard/codep/releases/tag/v0.1.0

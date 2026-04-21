@@ -39,6 +39,21 @@ npm i -g @ruichard/codep
 codep doctor                 # see what's installed/authenticated
 ```
 
+### Shell completion
+
+Enable tab-completion for subcommands:
+
+```sh
+# zsh
+codep completion zsh > "${fpath[1]}/_codep" && compinit
+
+# bash
+echo 'source <(codep completion bash)' >> ~/.bashrc
+
+# fish
+codep completion fish > ~/.config/fish/completions/codep.fish
+```
+
 ## Usage
 
 ### One-shot run

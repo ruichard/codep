@@ -17,6 +17,7 @@ import { loadConfig } from "./config/load.js";
 import { buildCustomRunners } from "./runners/custom.js";
 import { latestSessionId, readSession } from "./session/store.js";
 import { CODEP_VERSION } from "./version.js";
+import { completionInstallHint, completionScript } from "./commands/completion.js";
 
 const program = new Command();
 
@@ -249,6 +250,48 @@ sessionsCmd
 
 const PRIORITIES = ["quality", "balanced", "cheap"] as const;
 const POLICIES: readonly FallbackPolicy[] = ["auto", "warn", "fail"] as const;
+
+program
+  .command("completion [shell]")
+  .description("Print a shell completion script (bash|zsh|fish).")
+  .action((shellArg?: string) => {
+    const shell = shellArg ?? detectShell();
+    if (!shell) {
+      process.stderr.write(
+        "codep completion: could not detect your shell — pass one explicitly: bash | zsh | fish\n",
+      );
+      process.exit(2);
+    }
+    const script = completionScript(shell);
+    if (!script) {
+      process.stderr.write(
+        `codep completion: unsupported shell "${shell}" (supported: bash, zsh, fish)\n`,
+      );
+      process.exit(2);
+    }
+    // Write to stdout so it can be piped straight into a file or sourced.
+    process.stdout.write(script);
+    // When printed to a terminal, append install hints as a trailing comment
+    // block so humans see how to hook it up.
+    if (process.stdout.isTTY) {
+      process.stdout.write(
+        "\n" +
+          completionInstallHint(shell)
+            .split("\n")
+            .map((l) => (l.startsWith("#") ? l : `# ${l}`))
+            .join("\n") +
+          "\n",
+      );
+    }
+  });
+
+function detectShell(): string | undefined {
+  const shellEnv = process.env.SHELL ?? "";
+  if (shellEnv.includes("zsh")) return "zsh";
+  if (shellEnv.includes("bash")) return "bash";
+  if (shellEnv.includes("fish")) return "fish";
+  return undefined;
+}
 
 program
   .command("run", { isDefault: true })
