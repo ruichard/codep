@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-04-21
+
+### Fixed
+- codex is now reported as authenticated when its API key is declared in `~/.codex/config.toml` (not only `auth.json` or `$OPENAI_API_KEY`). `codex login status` was also downgrading real auth to "not authenticated" — the live probe now only upgrades the result, never downgrades it.
+
+### Added
+- New optional `authConfigFiles` field on `CliSpawnConfig`: matches a file's existence **and** content substring (useful for TOML/INI configs that may or may not carry credentials).
+
 ## [0.2.2] - 2026-04-21
 
 ### Fixed

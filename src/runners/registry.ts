@@ -20,9 +20,15 @@ const codexCfg: CliSpawnConfig = {
   buildArgs: (prompt) => ["exec", prompt],
   authEnvVars: ["OPENAI_API_KEY"],
   authPaths: [".codex/auth.json", ".config/codex/auth.json"],
-  // Authoritative: `codex login status` exits 0 iff logged in and prints
-  // `Logged in using ...`; exits non-zero with `Not logged in` otherwise.
-  // ~90ms on a warm machine, safe for `codep doctor`.
+  // `codex` also accepts an API key declared in config.toml, in which case
+  // `codex login status` reports "Not logged in" even though runs succeed.
+  // Treat config.toml as auth evidence when it names a key variable.
+  authConfigFiles: [
+    {
+      path: ".codex/config.toml",
+      containsAny: ["OPENAI_API_KEY", "api_key"],
+    },
+  ],
   authProbeArgs: ["login", "status"],
   versionArgs: ["--version"],
 };

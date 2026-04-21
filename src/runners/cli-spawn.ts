@@ -1,5 +1,5 @@
 import { execa } from "execa";
-import { access, constants } from "node:fs/promises";
+import { access, constants, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type {
@@ -29,11 +29,22 @@ export interface CliSpawnConfig {
   /** Files under $HOME whose existence implies interactive login. */
   authPaths: readonly string[];
   /**
+   * Config files under $HOME whose existence *and* content (matching any of
+   * the given substrings) implies auth. Use this for TOML/INI/JSON configs
+   * where a key like `OPENAI_API_KEY = "…"` may be present — bare file
+   * existence is not enough because the same file can exist without
+   * credentials (e.g. codex writes `config.toml` for non-auth settings).
+   */
+  authConfigFiles?: readonly {
+    path: string;
+    containsAny: readonly string[];
+  }[];
+  /**
    * Optional authoritative auth probe — argv run against the binary itself.
-   * Exit code 0 ⇒ authenticated, anything else ⇒ not. Only invoked when the
-   * caller requests a live probe (`opts.probe === true`) and overrides env /
-   * path heuristics when it gives a definitive answer. Kept optional because
-   * not every provider CLI ships a status subcommand.
+   * Exit code 0 ⇒ authenticated. A non-zero exit does NOT disprove auth
+   * (e.g. codex reads `OPENAI_API_KEY` from `config.toml` at runtime even
+   * when `codex login status` reports "Not logged in"), so the probe is
+   * treated as an additive positive signal only.
    */
   authProbeArgs?: readonly string[];
   /** Argv for a cheap `--version` probe used during live health checks. */
@@ -98,15 +109,32 @@ export class CliSpawnRunner implements Runner {
         break;
       }
     }
-    let authenticated = envHit || pathHit;
+    let configHit = false;
+    if (!envHit && !pathHit && this.cfg.authConfigFiles) {
+      for (const entry of this.cfg.authConfigFiles) {
+        const abs = join(home, entry.path);
+        if (!(await pathExists(abs))) continue;
+        try {
+          const text = await readFile(abs, "utf8");
+          if (entry.containsAny.some((needle) => text.includes(needle))) {
+            configHit = true;
+            break;
+          }
+        } catch {
+          // unreadable — ignore
+        }
+      }
+    }
+    let authenticated = envHit || pathHit || configHit;
     let authProbeDetail: string | undefined;
 
     // Live auth probe (e.g. `codex login status`). Run only when the caller
-    // asked for a probe — `codep doctor` does, per-run routing does not —
-    // because it spawns a subprocess. Exit 0 is authoritative "yes"; any
-    // other exit is authoritative "no" and overrides the file-existence
-    // heuristic (files can linger after logout / be created by older CLI
-    // versions that no longer represent valid credentials).
+    // asked for a probe — `codep doctor` does, per-run routing does not.
+    // Exit 0 is a strong positive signal, but a non-zero exit does NOT
+    // disprove auth: codex in particular will happily run `exec` while
+    // `login status` says "Not logged in" if `OPENAI_API_KEY` is defined
+    // in `config.toml` or the environment. So the probe only upgrades the
+    // result, never downgrades it.
     if (opts?.probe && this.cfg.authProbeArgs) {
       try {
         await execa(binPath, [...this.cfg.authProbeArgs], {
@@ -116,12 +144,13 @@ export class CliSpawnRunner implements Runner {
         });
         authenticated = true;
       } catch (err) {
-        authenticated = false;
-        authProbeDetail =
-          err instanceof Error && "stderr" in err
-            ? String((err as { stderr?: unknown }).stderr ?? "").trim() ||
-              err.message
-            : "auth probe failed";
+        if (!authenticated) {
+          authProbeDetail =
+            err instanceof Error && "stderr" in err
+              ? String((err as { stderr?: unknown }).stderr ?? "").trim() ||
+                err.message
+              : "auth probe failed";
+        }
       }
     }
 
