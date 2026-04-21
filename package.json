@@ -1,0 +1,65 @@
+{
+  "name": "codep",
+  "version": "0.0.0",
+  "description": "Route coding tasks to the most suitable official CLI (Claude Code / OpenAI Codex / Gemini CLI).",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "bin": {
+    "codep": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node ./dist/cli.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sync-models": "tsx scripts/sync-models.ts",
+    "prepublishOnly": "pnpm typecheck && pnpm test -- --run && pnpm build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codep-dev/codep.git"
+  },
+  "homepage": "https://codep.dev",
+  "bugs": {
+    "url": "https://github.com/codep-dev/codep/issues"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "execa": "^9.5.1",
+    "ink": "^5.0.1",
+    "ink-spinner": "^5.0.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "ink-testing-library": "^4.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.2"
+  },
+  "keywords": [
+    "cli",
+    "llm",
+    "router",
+    "claude",
+    "codex",
+    "gemini",
+    "coding-agent"
+  ]
+}
