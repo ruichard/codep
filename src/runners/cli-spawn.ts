@@ -28,6 +28,14 @@ export interface CliSpawnConfig {
   authEnvVars: readonly string[];
   /** Files under $HOME whose existence implies interactive login. */
   authPaths: readonly string[];
+  /**
+   * Optional authoritative auth probe — argv run against the binary itself.
+   * Exit code 0 ⇒ authenticated, anything else ⇒ not. Only invoked when the
+   * caller requests a live probe (`opts.probe === true`) and overrides env /
+   * path heuristics when it gives a definitive answer. Kept optional because
+   * not every provider CLI ships a status subcommand.
+   */
+  authProbeArgs?: readonly string[];
   /** Argv for a cheap `--version` probe used during live health checks. */
   versionArgs?: readonly string[];
 }
@@ -90,7 +98,32 @@ export class CliSpawnRunner implements Runner {
         break;
       }
     }
-    const authenticated = envHit || pathHit;
+    let authenticated = envHit || pathHit;
+    let authProbeDetail: string | undefined;
+
+    // Live auth probe (e.g. `codex login status`). Run only when the caller
+    // asked for a probe — `codep doctor` does, per-run routing does not —
+    // because it spawns a subprocess. Exit 0 is authoritative "yes"; any
+    // other exit is authoritative "no" and overrides the file-existence
+    // heuristic (files can linger after logout / be created by older CLI
+    // versions that no longer represent valid credentials).
+    if (opts?.probe && this.cfg.authProbeArgs) {
+      try {
+        await execa(binPath, [...this.cfg.authProbeArgs], {
+          timeout: 5_000,
+          shell: needsShell(binPath),
+          stdin: "ignore",
+        });
+        authenticated = true;
+      } catch (err) {
+        authenticated = false;
+        authProbeDetail =
+          err instanceof Error && "stderr" in err
+            ? String((err as { stderr?: unknown }).stderr ?? "").trim() ||
+              err.message
+            : "auth probe failed";
+      }
+    }
 
     let version: string | undefined;
     let healthy: boolean | undefined;
@@ -119,7 +152,7 @@ export class CliSpawnRunner implements Runner {
       version,
       detail: authenticated
         ? undefined
-        : "no auth env var set and no login file found",
+        : authProbeDetail ?? "no auth env var set and no login file found",
     };
   }
 

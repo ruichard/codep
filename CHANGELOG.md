@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-04-21
+
+### Fixed
+- `codep doctor` / dashboard now reports **codex** auth status via a live `codex login status` probe instead of only looking for `~/.codex/auth.json`. This fixes false negatives on machines where the auth file lives elsewhere (older CLI versions, ChatGPT OAuth) and false positives after logout.
+- Gemini auth detection now also matches `~/.gemini/google_accounts.json` and `~/.gemini/google_account_id` in addition to `oauth_creds.json` — the Gemini CLI has rotated file names across releases.
+
+### Added
+- New optional `authProbeArgs` field on `CliSpawnConfig` for providers that ship a status subcommand. Invoked only when the caller requests a live probe (`capabilities({ probe: true })`), so routing stays fast.
+
 ## [0.2.1] - 2026-04-21
 
 ### Fixed
